@@ -71,3 +71,50 @@ Check Active Bearers For UE
     Dictionary Should Contain Key      ${ue}[bearers]    1
     Dictionary Should Contain Key      ${ue}[bearers]    9
     Length Should Be    ${ue}[bearers]    2
+
+Attach Same UE Twice
+    [Documentation]    Attaching the same UE twice should return an error.
+    [Tags]    attach
+    Attach UE    ${UE_1}
+    Run Keyword And Expect Error    *HTTPError*    Attach UE    ${UE_1}
+
+Add Same Bearer Twice
+    [Documentation]    Attaching the same Bearer twice should return an error.
+    [Tags]    bearer
+    Attach UE    ${UE_1}
+    Add Bearer    ${UE_1}    ${BEARER_1}
+    Run Keyword And Expect Error    *HTTPError*    Add Bearer    ${UE_1}    ${BEARER_1}
+
+Start Traffic On Inactive Bearer
+    [Documentation]    Starting traffic on a bearer that is not added (inactive) to the UE 
+    ...                should return an error.
+    [Tags]    traffic    bearer
+    Attach UE    ${UE_1}
+    Run Keyword And Expect Error    *HTTPError*    Start Traffic    ${UE_1}    ${BEARER_1}    protocol=udp    mbps=10
+
+Detach Not Attached UE
+    [Documentation]    Trying to detach a UE that is not attached should return an error.
+    [Tags]    detach
+    Run Keyword And Expect Error    *HTTPError*    Detach UE    ${UE_1}
+
+Multiple UEs And Bearers Traffic Stats
+    [Documentation]    Two UEs, each with two bearers, start traffic with different bandwidths.
+    ...                Verifies that traffic statistics for each bearer are correct.
+    [Tags]    traffic    bearer    stats
+    Attach UE    ${UE_1}
+    Attach UE    ${UE_2}
+    Add Bearer    ${UE_1}    ${BEARER_1}
+    Add Bearer    ${UE_2}    ${BEARER_1}
+    Start Traffic    ${UE_1}    ${BEARER_DEFAULT}    protocol=udp    mbps=10
+    Start Traffic    ${UE_1}    ${BEARER_1}         protocol=udp    mbps=20
+    Start Traffic    ${UE_2}    ${BEARER_DEFAULT}   protocol=udp    mbps=30
+    Start Traffic    ${UE_2}    ${BEARER_1}         protocol=udp    mbps=40
+    ${stats1}=    Get Traffic Stats    ${UE_1}    ${BEARER_DEFAULT}
+    ${stats2}=    Get Traffic Stats    ${UE_1}    ${BEARER_1}
+    ${stats3}=    Get Traffic Stats    ${UE_2}    ${BEARER_DEFAULT}
+    ${stats4}=    Get Traffic Stats    ${UE_2}    ${BEARER_1}
+    Should Be Equal As Integers    ${stats1}[target_bps]    10000000
+    Should Be Equal As Integers    ${stats2}[target_bps]    20000000
+    Should Be Equal As Integers    ${stats3}[target_bps]    30000000
+    Should Be Equal As Integers    ${stats4}[target_bps]    40000000
+
